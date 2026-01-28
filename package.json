@@ -1,0 +1,17 @@
+{
+  "name": "mcp-client",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:mobile": "npm --prefix apps/mobile run start",
+    "dev:mobile:clear": "npm --prefix apps/mobile run start -- --clear",
+    "dev:mobile:debug": "EXPO_DEBUG=1 npm --prefix apps/mobile run start",
+    "ios": "npm --prefix apps/mobile run ios",
+    "android": "npm --prefix apps/mobile run android",
+    "web": "npm --prefix apps/mobile run web"
+  },
+  "dependencies": {}
+}

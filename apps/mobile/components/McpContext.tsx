@@ -1,4 +1,6 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
+import { HttpTransport, McpClient, TokenAuthProvider } from '@mcp/core';
 
 export type ServerConfig = {
   id: string;
@@ -10,6 +12,13 @@ export type ServerConfig = {
   ready?: boolean;
 };
 
+function serverKey(server: ServerConfig | Omit<ServerConfig, 'id' | 'ready'>): string {
+  const url = (server.serverUrl ?? '').replace(/\/+$/, '') || '';
+  const ep = server.endpoint ?? '/mcp';
+  const path = ep.startsWith('/') ? ep : `/${ep}`;
+  return `${url}|${path}`;
+}
+
 type McpContextValue = {
   servers: ServerConfig[];
   activeServerId: string;
@@ -17,6 +26,7 @@ type McpContextValue = {
   addServer: (server: Omit<ServerConfig, 'id' | 'ready'>) => void;
   removeServer: (id: string) => void;
   updateServer: (id: string, update: Partial<ServerConfig>) => void;
+  getOrCreateClient: (server: ServerConfig | Omit<ServerConfig, 'id' | 'ready'>) => Promise<McpClient>;
   provider: 'openai' | 'anthropic';
   setProvider: (provider: 'openai' | 'anthropic') => void;
   openaiModel: string;
@@ -66,9 +76,62 @@ export function McpProvider({ children }: { children: React.ReactNode }) {
     ]);
   }, []);
 
+  const clientCacheRef = useRef<Record<string, McpClient>>({});
+  const initPromiseRef = useRef<Record<string, Promise<McpClient>>>({});
+
+  const getOrCreateClient = useCallback(
+    async (server: ServerConfig | Omit<ServerConfig, 'id' | 'ready'>): Promise<McpClient> => {
+      const key = serverKey(server);
+      let client = clientCacheRef.current[key];
+      if (client) return client;
+      let initPromise = initPromiseRef.current[key];
+      if (!initPromise) {
+        initPromise = (async () => {
+          const authProvider = new TokenAuthProvider(server.token ?? '');
+          const transport = new HttpTransport({
+            serverUrl: server.serverUrl,
+            endpoint: server.endpoint ?? '/mcp',
+            authProvider,
+          });
+          const c = new McpClient({ transport });
+          await c.initialize({ name: 'mcp-mobile', version: '0.1.0' });
+          clientCacheRef.current[key] = c;
+          delete initPromiseRef.current[key];
+          return c;
+        })();
+        initPromiseRef.current[key] = initPromise;
+      }
+      return initPromise;
+    },
+    [],
+  );
+
   const removeServer = useCallback((id: string) => {
-    setServers((prev) => prev.filter((item) => item.id !== id));
+    setServers((prev) => {
+      const removed = prev.find((s) => s.id === id);
+      if (removed) {
+        const key = serverKey(removed);
+        delete clientCacheRef.current[key];
+        delete initPromiseRef.current[key];
+      }
+      return prev.filter((item) => item.id !== id);
+    });
     setActiveServerId((prev) => (prev === id ? '' : prev));
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+      if (nextState !== 'background') return;
+      const cache = clientCacheRef.current;
+      const keys = Object.keys(cache);
+      keys.forEach((key) => {
+        const client = cache[key];
+        if (client?.close) client.close().catch(() => {});
+      });
+      clientCacheRef.current = {};
+      initPromiseRef.current = {};
+    });
+    return () => subscription.remove();
   }, []);
 
   const updateServer = useCallback((id: string, update: Partial<ServerConfig>) => {
@@ -91,6 +154,7 @@ export function McpProvider({ children }: { children: React.ReactNode }) {
       addServer,
       removeServer,
       updateServer,
+      getOrCreateClient,
       provider,
       setProvider,
       openaiModel,
@@ -108,6 +172,7 @@ export function McpProvider({ children }: { children: React.ReactNode }) {
       addServer,
       removeServer,
       updateServer,
+      getOrCreateClient,
       provider,
       openaiModel,
       anthropicModel,

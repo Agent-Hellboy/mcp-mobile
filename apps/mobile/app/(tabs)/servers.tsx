@@ -3,7 +3,6 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View as RNView } 
 
 import { Text, View } from '@/components/Themed';
 import { ServerConfig, useMcp } from '@/components/McpContext';
-import { HttpTransport, McpClient, TokenAuthProvider } from '@mcp/core';
 
 type ServerDetails = {
   tools: unknown[];
@@ -14,7 +13,7 @@ type ServerDetails = {
 };
 
 export default function ServersScreen() {
-  const { servers, activeServerId, setActiveServerId } = useMcp();
+  const { servers, activeServerId, setActiveServerId, getOrCreateClient } = useMcp();
   const [serverDetails, setServerDetails] = useState<Record<string, ServerDetails>>({});
 
   const fetchServerDetails = async (server: ServerConfig) => {
@@ -25,20 +24,7 @@ export default function ServersScreen() {
     }));
 
     try {
-      const authProvider = new TokenAuthProvider(server.token ?? '');
-      const client = new McpClient({
-        transport: new HttpTransport({
-          serverUrl: server.serverUrl,
-          endpoint: server.endpoint,
-          authProvider,
-        }),
-      });
-
-      await client.initialize({
-        name: 'mcp-mobile',
-        version: '0.1.0',
-        platform: 'react-native',
-      });
+      const client = await getOrCreateClient(server);
 
       const [toolsResult, promptsResult, resourcesResult] = await Promise.all([
         client.listTools().catch(() => ({ tools: [] })),

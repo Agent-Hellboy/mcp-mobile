@@ -30,6 +30,7 @@ jobs:
       - run: npm run build --if-present
 
   mcp-flow:
+    if: ${{ secrets.MCP_HOST != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -40,5 +41,5 @@ jobs:
       - run: npm ci
       - run: npm run test:mcp-flow
         env:
-          MCP_HOST: http://103.182.102.123:3001
-          MCP_ENDPOINT: /mcp
+          MCP_HOST: ${{ secrets.MCP_HOST }}
+          MCP_ENDPOINT: ${{ secrets.MCP_ENDPOINT }}

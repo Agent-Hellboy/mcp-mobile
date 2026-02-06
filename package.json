@@ -14,5 +14,7 @@
     "web": "npm --prefix apps/mobile run web",
     "test:mcp-flow": "node --test packages/mcp-core/tests/mcp_flow.test.cjs"
   },
-  "dependencies": {}
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
 }

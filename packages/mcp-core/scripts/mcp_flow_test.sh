@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-HOST="${HOST:-http://127.0.0.1:3001}"
-ENDPOINT="${ENDPOINT:-/mcp}"
+HOST="${MCP_HOST:-${HOST:-http://127.0.0.1:3001}}"
+ENDPOINT="${MCP_ENDPOINT:-${ENDPOINT:-/mcp}}"
 BASE_URL="${HOST%/}${ENDPOINT}"
 
 tmp_dir="$(mktemp -d)"

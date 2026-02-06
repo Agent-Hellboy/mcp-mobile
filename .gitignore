@@ -51,7 +51,7 @@ expo-env.d.ts
 *.swo
 *~
 
-explore 
+explore/
 
 # OS
 .DS_Store

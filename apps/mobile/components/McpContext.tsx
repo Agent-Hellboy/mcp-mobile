@@ -16,7 +16,8 @@ function serverKey(server: ServerConfig | Omit<ServerConfig, 'id' | 'ready'>): s
   const url = (server.serverUrl ?? '').replace(/\/+$/, '') || '';
   const ep = server.endpoint ?? '/mcp';
   const path = ep.startsWith('/') ? ep : `/${ep}`;
-  return `${url}|${path}`;
+  const token = server.token ?? '';
+  return `${url}|${path}|${token}`;
 }
 
 type McpContextValue = {
@@ -87,17 +88,20 @@ export function McpProvider({ children }: { children: React.ReactNode }) {
       let initPromise = initPromiseRef.current[key];
       if (!initPromise) {
         initPromise = (async () => {
-          const authProvider = new TokenAuthProvider(server.token ?? '');
-          const transport = new HttpTransport({
-            serverUrl: server.serverUrl,
-            endpoint: server.endpoint ?? '/mcp',
-            authProvider,
-          });
-          const c = new McpClient({ transport });
-          await c.initialize({ name: 'mcp-mobile', version: '0.1.0' });
-          clientCacheRef.current[key] = c;
-          delete initPromiseRef.current[key];
-          return c;
+          try {
+            const authProvider = new TokenAuthProvider(server.token ?? '');
+            const transport = new HttpTransport({
+              serverUrl: server.serverUrl,
+              endpoint: server.endpoint ?? '/mcp',
+              authProvider,
+            });
+            const c = new McpClient({ transport });
+            await c.initialize({ name: 'mcp-mobile', version: '0.1.0' });
+            clientCacheRef.current[key] = c;
+            return c;
+          } finally {
+            delete initPromiseRef.current[key];
+          }
         })();
         initPromiseRef.current[key] = initPromise;
       }
@@ -111,6 +115,8 @@ export function McpProvider({ children }: { children: React.ReactNode }) {
       const removed = prev.find((s) => s.id === id);
       if (removed) {
         const key = serverKey(removed);
+        const cached = clientCacheRef.current[key];
+        if (cached?.close) cached.close().catch(() => {});
         delete clientCacheRef.current[key];
         delete initPromiseRef.current[key];
       }
@@ -135,7 +141,21 @@ export function McpProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateServer = useCallback((id: string, update: Partial<ServerConfig>) => {
-    setServers((prev) => prev.map((item) => (item.id === id ? { ...item, ...update } : item)));
+    setServers((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const updated = { ...item, ...update };
+        const oldKey = serverKey(item);
+        const newKey = serverKey(updated);
+        if (oldKey !== newKey) {
+          const cached = clientCacheRef.current[oldKey];
+          if (cached?.close) cached.close().catch(() => {});
+          delete clientCacheRef.current[oldKey];
+          delete initPromiseRef.current[oldKey];
+        }
+        return updated;
+      }),
+    );
   }, []);
 
   const setOpenaiKeySafe = useCallback((key: string) => {

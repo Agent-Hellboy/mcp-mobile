@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View as RNView } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
@@ -62,6 +62,7 @@ export default function ApiKeysScreen() {
   const [showOpenaiKey, setShowOpenaiKey] = useState(false);
   const [showAnthropicKey, setShowAnthropicKey] = useState(false);
   const [keyStatus, setKeyStatus] = useState('');
+  const keyStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSaveKeys = () => {
     const hasKey = provider === 'openai' ? openaiKey : anthropicKey;
@@ -70,8 +71,19 @@ export default function ApiKeysScreen() {
     } else {
       setKeyStatus('Please enter an API key first');
     }
-    setTimeout(() => setKeyStatus(''), 4000);
+    if (keyStatusTimeoutRef.current) {
+      clearTimeout(keyStatusTimeoutRef.current);
+    }
+    keyStatusTimeoutRef.current = setTimeout(() => setKeyStatus(''), 4000);
   };
+
+  useEffect(() => {
+    return () => {
+      if (keyStatusTimeoutRef.current) {
+        clearTimeout(keyStatusTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>

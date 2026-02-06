@@ -35,10 +35,10 @@ jobs:
       - run: npm run build --if-present
 
   mcp-flow:
+    if: ${{ secrets.MCP_HOST != '' }}
     env:
       MCP_HOST: ${{ secrets.MCP_HOST }}
       MCP_ENDPOINT: ${{ secrets.MCP_ENDPOINT }}
-    if: ${{ env.MCP_HOST != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

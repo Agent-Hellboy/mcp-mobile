@@ -19,7 +19,12 @@ export default function SettingsScreen() {
       <Text style={styles.subtitle}>Configure your API keys and MCP servers</Text>
 
       <View style={styles.section}>
-        <Pressable style={styles.actionCard} onPress={() => router.push('/(tabs)/api-keys')}>
+        <Pressable
+          style={styles.actionCard}
+          accessibilityRole="button"
+          accessibilityLabel="Add API Keys"
+          onPress={() => router.push('/(tabs)/api-keys')}
+        >
           <RNView style={styles.actionCardContent}>
             <RNView style={styles.actionCardLeft}>
               <FontAwesome name="key" size={24} color="#111827" />
@@ -41,7 +46,12 @@ export default function SettingsScreen() {
           </RNView>
         </Pressable>
 
-        <Pressable style={styles.actionCard} onPress={() => router.push('/(tabs)/add-server')}>
+        <Pressable
+          style={styles.actionCard}
+          accessibilityRole="button"
+          accessibilityLabel="Add MCP Server"
+          onPress={() => router.push('/(tabs)/add-server')}
+        >
           <RNView style={styles.actionCardContent}>
             <RNView style={styles.actionCardLeft}>
               <FontAwesome name="server" size={24} color="#111827" />

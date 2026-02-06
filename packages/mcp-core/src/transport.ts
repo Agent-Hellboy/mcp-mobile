@@ -495,6 +495,7 @@ export class HttpTransport implements Transport {
     const endpoint = this.endpoint;
     const url = `${this.serverUrl}${endpoint}`;
     const headers: HeadersMap = {
+      ...(this.headers ?? {}),
       'mcp-session-id': this.sessionId,
     };
     

@@ -24,7 +24,6 @@ export default function AddServerScreen() {
     setEndpoint('/mcp');
     setToken('');
     setDefaultTool('chat');
-    setStatus('');
   };
 
   const handleEdit = (server: ServerConfig) => {
@@ -171,7 +170,13 @@ export default function AddServerScreen() {
           <Pressable style={styles.button} onPress={handleSave}>
             <Text style={styles.buttonText}>{editingId ? 'Save Changes' : 'Add Server'}</Text>
           </Pressable>
-          <Pressable style={styles.buttonSecondary} onPress={resetForm}>
+          <Pressable
+            style={styles.buttonSecondary}
+            onPress={() => {
+              resetForm();
+              setStatus('');
+            }}
+          >
             <Text style={styles.buttonSecondaryText}>Clear</Text>
           </Pressable>
         </RNView>

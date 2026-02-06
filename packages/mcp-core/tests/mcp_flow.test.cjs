@@ -48,19 +48,23 @@ const transpileToTemp = () => {
 
 test('mcp flow using @mcp/core components', async () => {
   const outRoot = transpileToTemp();
-  const { HttpTransport, McpClient } = require(path.join(outRoot, 'index.js'));
+  try {
+    const { HttpTransport, McpClient } = require(path.join(outRoot, 'index.js'));
 
-  const transport = new HttpTransport({ serverUrl: host, endpoint });
-  const client = new McpClient({ transport });
+    const transport = new HttpTransport({ serverUrl: host, endpoint });
+    const client = new McpClient({ transport });
 
-  const initResult = await client.initialize({ name: 'mcp-flow-test', version: '0.1.0' });
-  assert.ok(initResult, 'initialize returned empty result');
+    const initResult = await client.initialize({ name: 'mcp-flow-test', version: '0.1.0' });
+    assert.ok(initResult, 'initialize returned empty result');
 
-  const tools = await client.listTools();
-  assert.ok(tools, 'tools/list returned empty result');
+    const tools = await client.listTools();
+    assert.ok(tools, 'tools/list returned empty result');
 
-  const callResult = await client.callTool({ name: 'echo', arguments: { message: 'hi' } });
-  assert.ok(callResult, 'tools/call returned empty result');
+    const callResult = await client.callTool({ name: 'echo', arguments: { message: 'hi' } });
+    assert.ok(callResult, 'tools/call returned empty result');
 
-  await client.close();
+    await client.close();
+  } finally {
+    fs.rmSync(outRoot, { recursive: true, force: true });
+  }
 });

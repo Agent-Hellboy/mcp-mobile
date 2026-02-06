@@ -20,6 +20,9 @@ export class McpClient {
   private transport: Transport;
   private logger?: Logger;
   private queue?: OfflineQueue;
+  private initialized = false;
+  private initResult?: unknown;
+  private initPromise?: Promise<unknown>;
 
   constructor(options: McpClientOptions) {
     this.transport = options.transport;
@@ -28,7 +31,29 @@ export class McpClient {
   }
 
   async initialize(clientInfo: Record<string, unknown> = {}): Promise<unknown> {
-    return this.request('initialize', { clientInfo });
+    if (this.initialized) return this.initResult;
+    if (this.initPromise) return this.initPromise;
+    // Streamable HTTP spec: protocolVersion, capabilities, clientInfo (name + version only)
+    const params = {
+      protocolVersion: '2024-11-05',
+      capabilities: {} as Record<string, unknown>,
+      clientInfo: {
+        name: (clientInfo.name as string) ?? 'mcp-client',
+        version: (clientInfo.version as string) ?? '0.1.0',
+      },
+    };
+    this.initPromise = this.request('initialize', params)
+      .then((result) => {
+        this.initialized = true;
+        this.initResult = result;
+        this.initPromise = undefined;
+        return result;
+      })
+      .catch((error) => {
+        this.initPromise = undefined;
+        throw error;
+      });
+    return this.initPromise;
   }
 
   async listTools(): Promise<unknown> {
@@ -75,5 +100,14 @@ export class McpClient {
     await this.queue.flush(async (item) => {
       await this.transport.request(item.method, item.params);
     });
+  }
+
+  async close(): Promise<void> {
+    if ('close' in this.transport && typeof this.transport.close === 'function') {
+      await (this.transport as { close: () => Promise<void> }).close();
+    }
+    this.initialized = false;
+    this.initResult = undefined;
+    this.initPromise = undefined;
   }
 }

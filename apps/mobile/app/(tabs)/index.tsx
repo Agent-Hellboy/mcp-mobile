@@ -3,7 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View as RNView } f
 
 import { Text, View } from '@/components/Themed';
 import { useMcp } from '@/components/McpContext';
-import { HttpTransport, McpClient, TokenAuthProvider } from '@mcp/core';
+import type { McpClient } from '@mcp/core';
 
 type DropdownProps = {
   value: string;
@@ -75,21 +75,6 @@ type OpenAiTool = {
 const ensureJsonObject = (value: unknown) => {
   if (value && typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
   return {};
-};
-
-const buildMcpClient = (server: {
-  serverUrl: string;
-  endpoint: string;
-  token?: string;
-}) => {
-  const authProvider = new TokenAuthProvider(server.token ?? '');
-  return new McpClient({
-    transport: new HttpTransport({
-      serverUrl: server.serverUrl,
-      endpoint: server.endpoint,
-      authProvider,
-    }),
-  });
 };
 
 const normalizeMcpTools = (payload: unknown) => {
@@ -197,6 +182,7 @@ export default function ChatScreen() {
   const {
     servers,
     activeServerId,
+    getOrCreateClient,
     provider,
     setProvider,
     openaiModel,
@@ -246,12 +232,7 @@ export default function ChatScreen() {
 
         if (active?.serverUrl) {
           try {
-            mcpClient = buildMcpClient(active);
-            await mcpClient.initialize({
-              name: 'mcp-mobile',
-              version: '0.1.0',
-              platform: 'react-native',
-            });
+            mcpClient = await getOrCreateClient(active);
             const toolPayload = await mcpClient.listTools();
             const mcpTools = normalizeMcpTools(toolPayload);
             tools = buildOpenAiTools(mcpTools);

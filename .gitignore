@@ -51,6 +51,8 @@ expo-env.d.ts
 *.swo
 *~
 
+explore 
+
 # OS
 .DS_Store
 Thumbs.db

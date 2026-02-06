@@ -61,6 +61,22 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <TabBarIcon name="sliders" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="api-keys"
+        options={{
+          title: 'API Keys',
+          tabBarIcon: ({ color }) => <TabBarIcon name="key" color={color} />,
+          href: null, // Hide from tab bar, only accessible via navigation
+        }}
+      />
+      <Tabs.Screen
+        name="add-server"
+        options={{
+          title: 'Add Server',
+          tabBarIcon: ({ color }) => <TabBarIcon name="server" color={color} />,
+          href: null, // Hide from tab bar, only accessible via navigation
+        }}
+      />
     </Tabs>
   );
 }
